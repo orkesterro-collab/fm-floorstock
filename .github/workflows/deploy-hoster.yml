@@ -1,0 +1,36 @@
+name: Build mobile partner portal
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fm-floorstock-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund --ignore-scripts
+      - name: Check business rules and build mobile version
+        run: |
+          npm test
+          npm run build
+          git diff --exit-code -- dist
+      - name: Validate deployable files
+        run: python3 .github/scripts/deploy_ftps.py --source-dir dist --check
+      - name: Report checked build
+        run: |
+          echo 'Mobile build and business rules checked. The shared FM publisher in orkesterro-collab/prioritet-parquet publishes this exact commit after this check succeeds.' >> "$GITHUB_STEP_SUMMARY"
