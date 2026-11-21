@@ -4,6 +4,11 @@ export const empty=()=>({shops:[],people:[],stock:[],orders:[],plans:{},posts:[]
 export const period=(d=new Date())=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Minsk'}).format(d).slice(0,7);
 export const monthLabel=m=>new Date(m+'-15T12:00:00').toLocaleDateString('ru',{month:'long',year:'numeric'}).replace(' г.','');
 export const money=n=>Number(n).toLocaleString('ru-RU',{maximumFractionDigits:2});
+export function updateDemoCatalogue(state) {
+ const legacy = state.stock.find(item => item.source === '1С УТ · Минск' && item.sku === 'EV-101' && item.name === 'Дуб Вирдия светлый');
+ if (legacy) Object.assign(legacy, {sku:'3456', name:'Spc Floor Granit Дуб мироока', type:'SPC'});
+ return state;
+}
 export function demo(){
  // Synthetic sample data for the local prototype; no live accounts or 1C connection.
  const s=empty(), m=period();
@@ -17,7 +22,7 @@ export function demo(){
  s.orders=[...sold,3250,2400,4260,1860].map((amount,i)=>{const x=s.stock[i%6],date=m+'-'+String(Math.min(today,1+Math.round(i*(today-1)/12))).padStart(2,'0');return {id:'ФС-'+(2401+i),shop:'p-101',seller:i%3?'alex':'lena',sku:x.sku,name:x.name,qty:Math.round(amount/x.price*100)/100,amount,status:i<9?'Отгружен':statuses[(i-9)%3],date,saleDate:i<9?date:'',revision:1}});
  s.plans['p-101/'+m]=60000;s.plans['p-102/'+m]=35000;
  s.posts=[{id:'p1',kind:'Новости',title:'Пополнение коллекции EVERSENSE',body:'В демонстрационном каталоге обновились остатки светлых древесных декоров. Доступный объём смотрите отдельно по каждому источнику.',date:m+'-01'}, {id:'p2',kind:'Обучение',title:'Как проверить наличие перед заказом',body:'Найдите товар по артикулу. Проверьте доступный метраж на складе Флорсток и дату выгрузки. Остаток поставщика учитывается отдельно. Согласуйте срок поставки перед подтверждением клиенту.',date:m+'-01'}];
- s.feeds=Object.fromEntries([...new Set(s.stock.map(x=>x.source))].map(k=>[k,new Date().toISOString()]));return s;
+ s.feeds=Object.fromEntries([...new Set(s.stock.map(x=>x.source))].map(k=>[k,new Date().toISOString()]));return updateDemoCatalogue(s);
 }
 export function visible(s,user){
  check(user&&['admin','director','seller'].includes(user.role),'Нет доступа');

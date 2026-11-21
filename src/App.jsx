@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, Layers, Package, Target, Users, BookOpen, Coins, ChevronRight, ChevronDown, CalendarDays, MoreHorizontal, X, Plus, Search, Upload, Check, Building2, Info, RefreshCw, FileText, LogIn, ShoppingBag } from 'lucide-react';
-import { demo, visible, apply, period, monthLabel, money, totals, statuses, categories } from './model';
+import { LayoutDashboard, Layers, Package, Target, Users, BookOpen, Coins, ChevronRight, ChevronDown, CalendarDays, MoreHorizontal, X, Plus, Search, Truck, Check, Building2, Info, RefreshCw, FileText, LogIn, ShoppingBag } from 'lucide-react';
+import { demo, updateDemoCatalogue, visible, apply, period, monthLabel, money, totals, statuses, categories } from './model';
+import StockScreen from './StockScreen';
+import OrderDraft, { useOrderDraft } from './OrderDraft';
 import { Chart } from './chart';
 import { parseCsv } from './csv';
 
@@ -19,7 +21,7 @@ const initials = name => name.split(' ').slice(0, 2).map(part => part[0]).join('
 const countLabel = (count, forms) => forms[count % 100 >= 11 && count % 100 <= 14 ? 2 : count % 10 === 1 ? 0 : count % 10 >= 2 && count % 10 <= 4 ? 1 : 2];
 const validState = value => value && ['shops', 'people', 'stock', 'orders', 'posts'].every(key => Array.isArray(value[key])) && value.plans && value.feeds && value.people.some(person => person.role === 'director' && person.shop === 'p-101') && value.people.some(person => person.role === 'seller' && person.shop === 'p-101');
 function readState(fallback) {
-  try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY)); return validState(value) ? value : fallback; }
+  try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY)); return validState(value) ? updateDemoCatalogue(value) : fallback; }
   catch { return fallback; }
 }
 function Badge({ status }) { return <span className={`status status-${statuses.indexOf(status)}`}>{status}</span>; }
@@ -32,7 +34,8 @@ export default function App() {
   const [sample, setSample] = useState(() => readState(demo()));
   const [role, setRole] = useState('director');
   const [shop, setShop] = useState('p-101');
-  const [page, setPage] = useState('Обзор');
+  const [page, setPage] = useState(() => window.location.hash === '#stock' ? 'Остатки' : 'Обзор');
+  const [draftPanel, setDraftPanel] = useState(null);
   const [month, setMonth] = useState(period());
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('');
@@ -55,6 +58,8 @@ export default function App() {
   const state = visible(sample, user);
   const admin = role === 'admin', seller = role === 'seller';
   const shopId = admin ? state.shops.find(item => item.id === shop)?.id || state.shops[0]?.id || '' : user.shop;
+  const { draft, save, remove } = useOrderDraft(user.id, shopId);
+  const draftCount = new Set(draft.map(line => line.displaySku || line.sku)).size;
   const company = state.shops.find(item => item.id === shopId)?.name || 'Магазин';
   const orders = state.orders.filter(order => order.shop === shopId).sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
   const people = state.people.filter(person => person.shop === shopId);
@@ -64,10 +69,15 @@ export default function App() {
   const percentage = target ? Math.round(sales / target * 100) : 0;
   const pendingOrders = orders.filter(order => statuses.indexOf(order.status) >= 0 && statuses.indexOf(order.status) < 3);
   const personName = id => state.people.find(person => person.id === id)?.name || 'Без привязки';
-  const filteredStock = state.stock.filter(item => `${item.name} ${item.sku}`.toLowerCase().includes(query.trim().toLowerCase()));
   const filteredOrders = orders.filter(order => (!filter || order.status === filter) && `${order.id} ${order.name}`.toLowerCase().includes(query.trim().toLowerCase()));
   const morePages = ['Планы продаж', 'Команда', 'Баллы', 'Материалы'].filter(name => !seller || !['Планы продаж', 'Команда'].includes(name));
-  function go(nextPage) { setPage(nextPage); setQuery(''); setFilter(''); window.scrollTo({ top: 0, behavior: 'instant' }); requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true })); }
+  function go(nextPage) {
+    if (nextPage === 'Остатки' || window.location.hash === '#stock') {
+      const url = new URL(window.location.href);
+      url.hash = nextPage === 'Остатки' ? 'stock' : '';
+      window.history.replaceState(null, '', url);
+    }
+    setPage(nextPage); setQuery(''); setFilter(''); window.scrollTo({ top: 0, behavior: 'instant' }); requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true })); }
   function openModal(name, order) { setError(''); if (order) setSelected(order); setModal(name); }
   function closeModal() { if (!busy) { setModal(null); setError(''); } }
   function persist(next) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { throw new Error('Браузер не смог сохранить изменения. Проверьте доступное место и настройки хранения.'); } setSample(next); }
@@ -95,7 +105,7 @@ export default function App() {
       apply(fresh, user, action); persist(fresh); setModal(null); setNotice(modal === 'Приглашение' ? 'Приглашение добавлено в демо. Письмо не отправлено.' : 'Сохранено в демо-кабинете');
     } catch (failure) { setError(failure.message || 'Не удалось сохранить изменения.'); } finally { setBusy(false); }
   }
-  function changeRole(nextRole) { setRole(nextRole); setShop('p-101'); setModal(null); go('Обзор'); }
+  function changeRole(nextRole) { setDraftPanel(null); setRole(nextRole); setShop('p-101'); setModal(null); go('Обзор'); }
   function resetDemo() { try { persist(demo()); setRole('director'); setShop('p-101'); setMonth(period()); setModal(null); go('Обзор'); setNotice('Демонстрационные данные восстановлены'); } catch (failure) { setError(failure.message); } }
   function orderCards(rows) {
     return rows.length ? <div className="order-list">{rows.map(order => <button className="order-card" key={`${order.shop}/${order.id}`} onClick={() => openModal('Заказ', order)} aria-label={`Заказ ${order.id}, ${order.name}, ${order.status}`}>
@@ -106,11 +116,14 @@ export default function App() {
   const monthControl = <label className="month-control"><CalendarDays size={18} aria-hidden="true" /><span>{monthLabel(month)}</span><ChevronDown size={16} aria-hidden="true" /><input type="month" aria-label="Отчётный месяц" value={month} onChange={event => event.target.value && setMonth(event.target.value)} onClick={event => { try { event.currentTarget.showPicker(); } catch {} }} /></label>;
   const productOptions = state.stock.filter((item, index, all) => item.price != null && all.findIndex(candidate => candidate.sku === item.sku && candidate.price != null) === index);
   return <div className="app-frame">
-    <header className="app-header"><button className="brand" onClick={() => go('Обзор')} aria-label="Флорсток — обзор"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Флорсток<small>Кабинет партнёра</small></span></button><button className="avatar-button" onClick={() => openModal('Профиль')} aria-label={`Профиль: ${user.name}, ${ROLES[role]}`}>{initials(user.name)}</button></header>
+    <header className="app-header"><button className="brand" onClick={() => go('Обзор')} aria-label="Флорсток — обзор"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Флорсток<small>Кабинет партнёра</small></span></button><button className="header-draft" onClick={() => setDraftPanel({review: true})} aria-label={`Мой заказ, позиций: ${draftCount}`}>
+        <span className="header-draft-icon"><Truck size={26} aria-hidden="true" />{draftCount > 0 && <span className="header-draft-count">{draftCount}</span>}</span>
+        <span>Мой заказ</span>
+      </button></header>
     {page !== 'Остатки' && <div className="demo-strip"><span className="demo-label">Демо</span><span>Данные примера</span><button onClick={() => openModal('Рабочий доступ')} aria-label="О демонстрационной версии"><Info size={17} /><span>Подробнее</span></button></div>}
     <main className="main-content">
       {page !== 'Остатки' && <div className="page-heading"><p className="eyebrow">{company} <span>·</span> {ROLES[role]}</p><h1 ref={titleRef} tabIndex={-1}>{PAGES[page][0]}</h1>{['Обзор', 'Планы продаж', 'Баллы'].includes(page) && monthControl}</div>}
-      {admin && <div className="admin-context"><Field label="Магазин"><Select aria-label="Выбрать магазин" value={shopId} onChange={event => setShop(event.target.value)}>{state.shops.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field><button className="square-button" aria-label="Добавить магазин" onClick={() => openModal('Новый магазин')}><Plus size={20} /></button></div>}
+      {admin && <div className="admin-context"><Field label="Магазин"><Select aria-label="Выбрать магазин" value={shopId} onChange={event => { setDraftPanel(null); setShop(event.target.value); }}>{state.shops.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field><button className="square-button" aria-label="Добавить магазин" onClick={() => openModal('Новый магазин')}><Plus size={20} /></button></div>}
       {page === 'Обзор' && <>
         <section className="sales-hero" aria-label={seller ? 'Мои продажи' : 'Объём продаж'}><div className="hero-label"><ShoppingBag size={19} /><span>{seller ? 'Мои продажи' : 'Продажи магазина'}</span></div><div className="hero-amount">{money(sales)} <span>BYN</span></div><p>По отгруженным заказам за месяц</p><div className="hero-bottom"><span>{sold.length} {countLabel(sold.length, ['отгрузка', 'отгрузки', 'отгрузок'])}</span><button onClick={() => go(seller ? 'Баллы' : 'Планы продаж')}>Подробнее <ChevronRight size={17} /></button></div></section>
         <div className="metric-grid"><button className="metric-card" onClick={() => go('Заказы')}><span className="metric-label"><Package size={19} />В работе</span><strong>{pendingOrders.length}<small>{countLabel(pendingOrders.length, ['заказ', 'заказа', 'заказов'])}</small></strong><span className="metric-foot">От приёма до выдачи</span></button><button className="metric-card" onClick={() => go('Баллы')}><span className="metric-label"><Coins size={19} />{seller ? 'Мои баллы' : 'Баллы команды'}</span><strong>{money(points)}<small>балл.</small></strong><span className="metric-foot">За отгрузки в месяце</span></button></div>
@@ -118,12 +131,8 @@ export default function App() {
         <section className="card chart-card"><SectionTitle title="Динамика продаж"><span className="secondary-text">BYN</span></SectionTitle><div className="chart-legend"><span><i />Продажи</span>{target > 0 && <span><i className="legend-plan" />План</span>}</div><Chart month={month} sold={sold} target={target} /></section>
         <section className="recent-section"><SectionTitle title="Последние заказы"><button className="inline-link" onClick={() => go('Заказы')}>Все заказы</button></SectionTitle>{orderCards(orders.slice(0, 3))}</section>
       </>}
-      {page === 'Остатки' && <>
-        <div className="search-controls" style={{ gridTemplateColumns: '1fr' }}><label className="search-field"><Search size={20} aria-hidden="true" /><input aria-label="Поиск покрытия" value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или артикул" />{query && <button aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={18} /></button>}</label></div>
-        <div className="list-intro"><p>{filteredStock.length} {countLabel(filteredStock.length, ['позиция', 'позиции', 'позиций'])} по складам</p>{admin && <button className="inline-link" onClick={() => openModal('Импорт остатков')}><Upload size={17} />Загрузить CSV</button>}</div>
-        <div className="stock-list">{filteredStock.map(item => <article className="card stock-card" key={`${item.source}/${item.sku}`}><div className="stock-card-top"><span className="product-type">{item.type}</span><span className="secondary-text">{item.sku}</span></div><h2>{item.name}</h2><div className="stock-quantity"><strong>{money(item.qty)} <span>м²</span></strong><span>доступно</span></div><div className="stock-source"><Building2 size={16} /><span>{item.source}</span></div><p className="stock-updated">Пример обновления: {state.feeds[item.source] ? new Date(state.feeds[item.source]).toLocaleString('ru', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Minsk' }) : '—'}</p></article>)}</div>
-        {!filteredStock.length && <Empty icon={Layers} title="Покрытие не найдено" text="Попробуйте другое название или артикул." />}
-      </>}
+      {page === 'Остатки' && <StockScreen stock={state.stock} feeds={state.feeds} draft={draft}
+        onAdd={item => setDraftPanel({item})} onImport={admin ? () => openModal('Импорт остатков') : undefined} />}
       {page === 'Заказы' && <>
         {admin && <button className="primary-button page-action" onClick={() => openModal('Новый заказ')}><Plus size={19} />Новый демо-заказ</button>}
         <div className="search-controls"><label className="search-field"><Search size={20} aria-hidden="true" /><input aria-label="Поиск заказа" value={query} onChange={event => setQuery(event.target.value)} placeholder="Номер или покрытие" />{query && <button aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={18} /></button>}</label><Select aria-label="Статус заказа" value={filter} onChange={event => setFilter(event.target.value)}><option value="">Все статусы</option>{statuses.map(status => <option key={status}>{status}</option>)}</Select></div>
@@ -157,6 +166,8 @@ export default function App() {
         <p className="page-note">Мобильный кабинет Флорсток.<br />Демонстрационные данные — только для знакомства с возможностями.</p>
       </>}
     </main>
+    <OrderDraft key={JSON.stringify([user.id, shopId])} panel={draftPanel} onClose={() => setDraftPanel(null)}
+      stock={state.stock} draft={draft} save={save} remove={remove} />
     <nav className="bottom-nav" aria-label="Основная навигация">{PRIMARY_PAGES.map(name => { const Icon = PAGES[name][1]; const active = page === name || name === 'Ещё' && !PRIMARY_PAGES.includes(page); return <button key={name} onClick={() => go(name)} aria-current={active ? 'page' : undefined}><span className="nav-icon"><Icon size={22} strokeWidth={active ? 2.2 : 1.7} />{name === 'Заказы' && pendingOrders.length > 0 && <span className="nav-count" aria-label={`${pendingOrders.length} в работе`}>{pendingOrders.length}</span>}</span><span>{name}</span></button>; })}</nav>
     <dialog ref={dialog} className="bottom-sheet" aria-labelledby="sheet-title" onCancel={event => { event.preventDefault(); closeModal(); }} onClick={event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeModal(); } }}>
       {modal && <><div className="sheet-grip" aria-hidden="true" /><div className="sheet-heading"><h2 id="sheet-title">{modal === 'Заказ' ? selected.id : modal}</h2><button className="square-button" autoFocus aria-label="Закрыть окно" disabled={busy} onClick={closeModal}><X size={22} /></button></div>

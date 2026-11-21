@@ -15,3 +15,27 @@
 .search-field>input{width:0}
 .search-field>svg{flex:none}
 .sheet-content{min-width:0;grid-template-columns:minmax(0,1fr)}
+
+.header-draft {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 3px 6px;
+  color: var(--forest);
+  font-size: .75rem;
+  font-weight: 600;
+}
+.header-draft-icon { position: relative; display: flex; }
+.header-draft-count {
+  position: absolute;
+  left: 75%;
+  top: -5px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 12px;
+  background: #97522e;
+  color: white;
+  font-size: .65rem;
+  text-align: center;
+}
