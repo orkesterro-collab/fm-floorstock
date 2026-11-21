@@ -64,8 +64,7 @@ export default function App() {
   const percentage = target ? Math.round(sales / target * 100) : 0;
   const pendingOrders = orders.filter(order => statuses.indexOf(order.status) >= 0 && statuses.indexOf(order.status) < 3);
   const personName = id => state.people.find(person => person.id === id)?.name || 'Без привязки';
-  const stockSources = [...new Set(state.stock.map(item => item.source))];
-  const filteredStock = state.stock.filter(item => (!filter || item.source === filter) && `${item.name} ${item.sku}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const filteredStock = state.stock.filter(item => `${item.name} ${item.sku}`.toLowerCase().includes(query.trim().toLowerCase()));
   const filteredOrders = orders.filter(order => (!filter || order.status === filter) && `${order.id} ${order.name}`.toLowerCase().includes(query.trim().toLowerCase()));
   const morePages = ['Планы продаж', 'Команда', 'Баллы', 'Материалы'].filter(name => !seller || !['Планы продаж', 'Команда'].includes(name));
   function go(nextPage) { setPage(nextPage); setQuery(''); setFilter(''); window.scrollTo({ top: 0, behavior: 'instant' }); requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true })); }
@@ -108,9 +107,9 @@ export default function App() {
   const productOptions = state.stock.filter((item, index, all) => item.price != null && all.findIndex(candidate => candidate.sku === item.sku && candidate.price != null) === index);
   return <div className="app-frame">
     <header className="app-header"><button className="brand" onClick={() => go('Обзор')} aria-label="Флорсток — обзор"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Флорсток<small>Кабинет партнёра</small></span></button><button className="avatar-button" onClick={() => openModal('Профиль')} aria-label={`Профиль: ${user.name}, ${ROLES[role]}`}>{initials(user.name)}</button></header>
-    <div className="demo-strip"><span className="demo-label">Демо</span><span>Данные примера</span><button onClick={() => openModal('Рабочий доступ')} aria-label="О демонстрационной версии"><Info size={17} /><span>Подробнее</span></button></div>
+    {page !== 'Остатки' && <div className="demo-strip"><span className="demo-label">Демо</span><span>Данные примера</span><button onClick={() => openModal('Рабочий доступ')} aria-label="О демонстрационной версии"><Info size={17} /><span>Подробнее</span></button></div>}
     <main className="main-content">
-      <div className="page-heading"><p className="eyebrow">{company} <span>·</span> {ROLES[role]}</p><h1 ref={titleRef} tabIndex={-1}>{PAGES[page][0]}</h1>{['Обзор', 'Планы продаж', 'Баллы'].includes(page) && monthControl}</div>
+      {page !== 'Остатки' && <div className="page-heading"><p className="eyebrow">{company} <span>·</span> {ROLES[role]}</p><h1 ref={titleRef} tabIndex={-1}>{PAGES[page][0]}</h1>{['Обзор', 'Планы продаж', 'Баллы'].includes(page) && monthControl}</div>}
       {admin && <div className="admin-context"><Field label="Магазин"><Select aria-label="Выбрать магазин" value={shopId} onChange={event => setShop(event.target.value)}>{state.shops.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</Select></Field><button className="square-button" aria-label="Добавить магазин" onClick={() => openModal('Новый магазин')}><Plus size={20} /></button></div>}
       {page === 'Обзор' && <>
         <section className="sales-hero" aria-label={seller ? 'Мои продажи' : 'Объём продаж'}><div className="hero-label"><ShoppingBag size={19} /><span>{seller ? 'Мои продажи' : 'Продажи магазина'}</span></div><div className="hero-amount">{money(sales)} <span>BYN</span></div><p>По отгруженным заказам за месяц</p><div className="hero-bottom"><span>{sold.length} {countLabel(sold.length, ['отгрузка', 'отгрузки', 'отгрузок'])}</span><button onClick={() => go(seller ? 'Баллы' : 'Планы продаж')}>Подробнее <ChevronRight size={17} /></button></div></section>
@@ -120,10 +119,10 @@ export default function App() {
         <section className="recent-section"><SectionTitle title="Последние заказы"><button className="inline-link" onClick={() => go('Заказы')}>Все заказы</button></SectionTitle>{orderCards(orders.slice(0, 3))}</section>
       </>}
       {page === 'Остатки' && <>
-        <div className="search-controls"><label className="search-field"><Search size={20} aria-hidden="true" /><input aria-label="Поиск покрытия" value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или артикул" />{query && <button aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={18} /></button>}</label><Select aria-label="Источник остатков" value={filter} onChange={event => setFilter(event.target.value)}><option value="">Все источники</option>{stockSources.map(source => <option key={source}>{source}</option>)}</Select></div>
+        <div className="search-controls" style={{ gridTemplateColumns: '1fr' }}><label className="search-field"><Search size={20} aria-hidden="true" /><input aria-label="Поиск покрытия" value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или артикул" />{query && <button aria-label="Очистить поиск" onClick={() => setQuery('')}><X size={18} /></button>}</label></div>
         <div className="list-intro"><p>{filteredStock.length} {countLabel(filteredStock.length, ['позиция', 'позиции', 'позиций'])} по складам</p>{admin && <button className="inline-link" onClick={() => openModal('Импорт остатков')}><Upload size={17} />Загрузить CSV</button>}</div>
         <div className="stock-list">{filteredStock.map(item => <article className="card stock-card" key={`${item.source}/${item.sku}`}><div className="stock-card-top"><span className="product-type">{item.type}</span><span className="secondary-text">{item.sku}</span></div><h2>{item.name}</h2><div className="stock-quantity"><strong>{money(item.qty)} <span>м²</span></strong><span>доступно</span></div><div className="stock-source"><Building2 size={16} /><span>{item.source}</span></div><p className="stock-updated">Пример обновления: {state.feeds[item.source] ? new Date(state.feeds[item.source]).toLocaleString('ru', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Minsk' }) : '—'}</p></article>)}</div>
-        {!filteredStock.length && <Empty icon={Layers} title="Покрытие не найдено" text="Измените запрос или выберите другой источник." />}
+        {!filteredStock.length && <Empty icon={Layers} title="Покрытие не найдено" text="Попробуйте другое название или артикул." />}
       </>}
       {page === 'Заказы' && <>
         {admin && <button className="primary-button page-action" onClick={() => openModal('Новый заказ')}><Plus size={19} />Новый демо-заказ</button>}
