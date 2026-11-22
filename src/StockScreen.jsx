@@ -43,8 +43,8 @@ function StockCard({ item, feed, selectedQty, onAdd, today }) {
   const detailId = useId();
   const summary = stockSummary(item, today);
   return <article className="card inventory-card">
-    <span className="product-type">{item.displaySku || item.sku} · {item.type}</span>
-    <h2>{item.name}</h2>
+    <span className="product-type">{item.type}</span>
+    <h2>{item.displaySku} {item.name}</h2>
     <p className="inventory-available"><strong>{area(item.qty)}</strong> {item.supplier ? 'у поставщика' : 'в наличии'}</p>
     {summary && <p className="inventory-shipment">{summary}</p>}
     {item.supplier && <p className="inventory-shipment">{item.source}</p>}
@@ -106,7 +106,6 @@ export default function StockScreen({ stock, feeds = {}, draft = [], onAdd, onIm
       {matches.map(item => <StockCard key={JSON.stringify([item.source, item.sku])} item={item} today={today} feed={feeds[item.source]} onAdd={onAdd}
         selectedQty={draft.filter(row => row.sku === item.sku && row.source === item.source).reduce((sum, row) => sum + row.qty, 0)} />)}
     </div>
-    {matches.length > 0 && <div aria-hidden="true" className="ink-crew" />}
     {!matches.length && <div className="card inventory-empty"><Layers size={26} /><h2>Покрытия не найдены</h2>
       {(query || minimum || availableOnly || withSupply) && <button className="inline-link" onClick={clearFilters}>Сбросить фильтры</button>}
     </div>}

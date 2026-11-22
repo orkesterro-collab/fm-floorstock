@@ -165,7 +165,7 @@ function DraftSheet({ panel, onClose, stock, draft, save, remove }) {
       : <p className="sheet-content">Этой позиции больше нет в остатках.</p>)}
     {!chosen && <div className="sheet-content draft-content">
       <p className="draft-note">Черновик заказа сохраняется в этом браузере.</p>
-      {draft.length === 0 && <div className="draft-empty"><div className="ink-driver" aria-hidden="true"><span>Полный порядок</span></div><p>Заказ пока пуст</p><small>Выберите покрытие и нажмите «В заказ».</small></div>}
+      {draft.length === 0 && <div className="draft-empty"><span className="paper-driver" aria-hidden="true" /><p>Заказ пока пуст</p><small>Выберите покрытие и нажмите «В заказ».</small></div>}
       <ul className="draft-items">{draft.map(row => {
         const product = stock.find(entry => sameProduct(entry, row));
         const current = product && stockForDisplay(product);
