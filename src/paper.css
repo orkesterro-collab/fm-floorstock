@@ -1,0 +1,50 @@
+:root {
+  --ink: #151515;
+  --forest: #181818;
+  --forest-dark: #080808;
+  --muted: #595959;
+  --line: #d9d9d9;
+  --canvas: #fff;
+  --copper: #272727;
+  color: var(--ink);
+  background: #f6f6f6;
+}
+.app-frame, .bottom-nav { box-shadow: none; }
+.app-header { min-height: 58px; padding-block: 6px; background: white; }
+.brand { font-size: 1.55rem; }
+.header-draft { min-width: 52px; background: transparent; border: 0; }
+.header-draft-icon { align-items: center; gap: 6px; }
+.header-draft-count { position: static; background: none; color: var(--ink); font-size: .95rem; }
+.demo-strip { background: white; border-bottom: 1px solid var(--line); }
+.main-content { padding-top: 18px; }
+.stock-heading { margin-bottom: 14px; }
+.card, .metric-card, .sales-hero, .points-hero {
+  border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+  background: white; padding-inline: 0;
+}
+.sales-hero { color: var(--ink); }
+.sales-hero:after { display: none; }
+.sales-hero .hero-label, .sales-hero .hero-label svg, .sales-hero .hero-amount span,
+.sales-hero > p, .sales-hero .hero-bottom, .hero-bottom button { color: var(--muted); }
+.hero-bottom { border-color: var(--line); }
+.plan-hero > .progress-track, .progress-track { background: #e7e7e7; }
+.plan-hero > .progress-track > span, .progress-track > span { background: var(--ink); }
+.points-hero { text-align: left; padding-right: 42%; background: white url('./art/ledger.webp') right center / auto 78% no-repeat; }
+.ink-check { padding-right: 28%; background: url('./art/check.webp') right center / auto 90% no-repeat; }
+.plan-hero::after {
+  content: ''; display: block; position: static; margin: 10px 0 0 auto; width: 130px;
+  height: 40px; border: 0; border-radius: 0; background: url('./art/measure.webp') center / contain no-repeat;
+}
+.ink-crew { margin: 16px auto 0; width: min(60%,240px); height: 70px; background: url('./art/crew.webp') center / contain no-repeat; }
+.ink-driver { position: relative; width: min(100%,280px); aspect-ratio: 615/309; background: url('./art/driver.webp') center / contain no-repeat; }
+.ink-driver span { position: absolute; left: 11%; top: 40%; font: italic .66rem Georgia, serif; transform: rotate(-3deg); }
+.stock-list { gap: 0; }
+.inventory-card { padding: 12px 0 9px; }
+.inventory-card h2 { margin: 2px 0 5px; }
+.inventory-card .product-type { padding: 0; background: transparent; font-weight: 500; color: var(--muted); }
+.inventory-available strong { font-size: 1.16rem; }
+.inventory-actions { margin-top: 3px; padding: 0; border: 0; }
+.inventory-add { background: white; color: var(--ink); border: 1px solid currentColor; border-radius: 5px; }
+.inventory-filters button, .inventory-minimum, .search-field, .primary-button, .secondary-button, .month-control { border-radius: 5px; }
+.bottom-nav > button { border-radius: 0; }
+.bottom-nav > button[aria-current] { background: white; box-shadow: inset 0 -2px currentColor; }

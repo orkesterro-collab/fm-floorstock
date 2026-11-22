@@ -1,5 +1,5 @@
 .inventory-screen {
-  --stock-border: #d9e3dc;
+  --stock-border: #e0e0e0;
 }
 
 .inventory-search {
@@ -24,12 +24,12 @@
 }
 
 .inventory-minimum[aria-invalid="true"] {
-  border-color: #af5339;
+  border-color: #646464;
 }
 
 .inventory-error {
   margin-top: 6px;
-  color: #99412a;
+  color: #525252;
   font-size: .875rem;
 }
 
@@ -51,7 +51,7 @@
   gap: 5px;
   min-height: 40px;
   padding: 0 13px;
-  border: 1px solid #bbc9bf;
+  border: 1px solid #c5c5c5;
   border-radius: 9px;
   background: #fff;
   font-size: .875rem;
@@ -59,7 +59,7 @@
 
 .inventory-filters button[aria-pressed="true"] {
   border-color: var(--forest);
-  background: #e3eee6;
+  background: #ebebeb;
   color: var(--forest-dark);
 }
 
@@ -100,7 +100,7 @@
 
 .inventory-shipment {
   margin-top: 4px;
-  color: #4a6154;
+  color: #5b5b5b;
   font-size: .875rem;
 }
 
@@ -125,7 +125,7 @@
 
 .inventory-disclosure {
   padding: 0;
-  color: #456050;
+  color: #595959;
 }
 
 .inventory-disclosure[aria-expanded="true"] svg {
